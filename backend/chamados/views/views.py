@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from ..models.models import Chamado
 from ..serializers.serializers import ChamadoSerializer
-from ...sankhya.services.sankhya_service import SankhyaAPI
+from sankhya.services.sankhya_service import SankhyaAPI
 
 
 class ChamadoViewSet(viewsets.ModelViewSet):

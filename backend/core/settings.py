@@ -128,7 +128,10 @@ MICROSOFT_SCOPES = "openid profile email User.Read"
 MICROSOFT_REDIRECT_URI = "http://localhost:8000/auth/callback/"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'auth_microsoft.services.authentication.JWTFromCookieAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
 }
