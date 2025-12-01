@@ -5,6 +5,7 @@ from auth_microsoft.views import MicrosoftLoginView, MicrosoftCallbackView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/", include("chamados.urls")),
+    path("api/sankhya/", include("sankhya.urls")),
     path('auth/login/microsoft/', MicrosoftLoginView.as_view()),
     path('auth/callback/', MicrosoftCallbackView.as_view()),
 
