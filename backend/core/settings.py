@@ -126,3 +126,9 @@ MICROSOFT_TENANT_ID = os.getenv("MICROSOFT_TENANT_ID")
 MICROSOFT_SCOPES = "openid profile email User.Read"
 
 MICROSOFT_REDIRECT_URI = "http://localhost:8000/auth/callback/"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+}
