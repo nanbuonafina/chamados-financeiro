@@ -1,9 +1,9 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Chamado
-from .serializers import ChamadoSerializer
-from .services.sankhya_service import SankhyaAPI
+from ..models.models import Chamado
+from ..serializers.serializers import ChamadoSerializer
+from ...sankhya.services.sankhya_service import SankhyaAPI
 
 
 class ChamadoViewSet(viewsets.ModelViewSet):

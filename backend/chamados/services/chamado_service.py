@@ -1,5 +1,5 @@
 from django.utils import timezone
-from chamados.models import Chamado, ItemChamado
+from backend.chamados.models.models import Chamado, ItemChamado
 
 class ChamadoService:
 

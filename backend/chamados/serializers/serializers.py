@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Chamado, ItemChamado, AnexoChamado
+from ..models.models import Chamado, ItemChamado, AnexoChamado
 
 
 class ItemChamadoSerializer(serializers.ModelSerializer):

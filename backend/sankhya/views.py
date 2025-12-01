@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from .services.sankhya_service import SankhyaAPI
+from ..sankhya.services.sankhya_service import SankhyaAPI
 
 
 class EmpresasView(APIView):

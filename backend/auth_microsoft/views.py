@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from .microsoft_oauth import MicrosoftOAuth
+from .services.microsoft_oauth import MicrosoftOAuth
 
 
 class MicrosoftLoginView(APIView):
