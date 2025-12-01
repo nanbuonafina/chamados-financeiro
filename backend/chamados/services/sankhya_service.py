@@ -92,33 +92,31 @@ class SankhyaAPI:
         limit: int = 500,
         paginated: bool = True
     ):
-        """
-        Faz requisições padronizadas com paginação para qualquer entidade.
-        """
-
         page = 0
         all_records = []
 
         while True:
             body = {
-                "dataSet": {
-                    "rootEntity": root_entity,
-                    "includePresentationFields": "N",
-                    "offsetPage": str(page),
-                    "limit": str(limit),
-                    "entity": [
-                        {
-                            "path": "",
-                            "fieldset": {
-                                "list": field_list
+                "requestBody": {
+                    "dataSet": {
+                        "rootEntity": root_entity,
+                        "includePresentationFields": "N",
+                        "offsetPage": str(page),
+                        "limit": str(limit),
+                        "entity": [
+                            {
+                                "path": "",
+                                "fieldset": {
+                                    "list": field_list
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
             }
 
             if criteria:
-                body["dataSet"]["criteria"] = criteria
+                body["requestBody"]["dataSet"]["criteria"] = criteria
 
             data = cls.call_service("CRUDServiceProvider.loadRecords", body)
 
@@ -132,11 +130,9 @@ class SankhyaAPI:
             if not entities:
                 break
 
-            # Mapeia f0, f1, f2 -> nomes reais
             mapped = cls.map_generic_fields(entities, metadata)
             all_records.extend(mapped)
 
-            # Paginação
             has_more = entities_data.get("hasMoreResult", "false") == "true"
 
             if not paginated or not has_more:
@@ -190,40 +186,63 @@ class SankhyaAPI:
     # =====================================================================
     @classmethod
     def listar_empresas(cls):
-        """
-        Listagem usando CRUDServiceProvider.loadRecords
-        Agora com params corretos e payload igual ao necessário.
-        """
+        url = f"{cls.BASE_URL}/gateway/v1/mge/service.sbr"
+        headers = cls.get_headers()
 
-        body = {
-            "dataSet": {
-                "rootEntity": "Empresa",
-                "includePresentationFields": "N",
-                "offsetPage": "0",
-                "entity": [
-                    {
-                        "path": "",
-                        "fieldset": {
-                            "list": "CODEMP,NOMEFANTASIA"
+        params = {
+            "serviceName": "CRUDServiceProvider.loadRecords",
+            "outputType": "json"
+        }
+
+        payload = {
+            "requestBody": {
+                "dataSet": {
+                    "rootEntity": "Empresa",
+                    "includePresentationFields": "S",
+                    "offsetPage": "0",
+                    "entity": [
+                        {
+                            "path": "",
+                            "fieldset": {"list": "CODEMP,NOMEFANTASIA"}
                         }
-                    }
-                ]
+                    ]
+                }
             }
         }
 
-        data = cls.call_service("CRUDServiceProvider.loadRecords", body)
+        print("\n==== ENVIANDO REQUEST PARA SANKHYA ====")
+        print("URL:", url)
+        print("Params:", params)
+        print("Headers:", headers)
+        print("Body:", payload)
+        print("======================================\n")
 
-        entities = data.get("responseBody", {}).get("entities", {}).get("entity", [])
+        response = requests.post(url, headers=headers, params=params, json=payload)
+        response.raise_for_status()
 
+        print("\n==== RESPOSTA DO SERVICE ====")
+        print("Status:", response.status_code)
+        print("Text:", response.text)
+        print("=================================\n")
+
+        data = response.json()
+
+        # Extrai registros
+        entities = (
+            data.get("responseBody", {})
+                .get("entities", {})
+                .get("entity", [])
+        )
+
+        # Se vier 1 item só, vira lista
         if isinstance(entities, dict):
             entities = [entities]
 
         empresas = []
         for e in entities:
-            empresas.append({
-                "codigo": e.get("f0", {}).get("$"),
-                "nome": e.get("f1", {}).get("$")
-            })
+            codigo = e.get("f0", {}).get("$")
+            nome = e.get("f1", {}).get("$")
+            empresas.append({"codigo": codigo, "nome": nome})
 
         return empresas
 
@@ -231,7 +250,7 @@ class SankhyaAPI:
     # ENVIAR NOTA — permanece igual
     # =====================================================================
     @classmethod
-    def enviar_nota(cls, form_data: dict, lista_itens: list):
+    def enviar_nota(cls, form_data: dict, lista_itens: list, debug=False):
         """
         Envia uma nota fiscal via CACSP.incluirNota.
         """
@@ -259,6 +278,7 @@ class SankhyaAPI:
 
         cabecalho_payload = {
             "NUNOTA": {},
+            "CODCENCUS": {"$": 1010109},
             "CODEMP": {"$": form_data["empresa_codigo"]},
             "CODPARC": {"$": form_data["parceiro_codigo"]},
             "DTNEG": {"$": form_data["data_emissao"]},
@@ -275,16 +295,25 @@ class SankhyaAPI:
         }
 
         payload = {
-            "nota": {
-                "cabecalho": cabecalho_payload,
-                "itens": {
-                    "INFORMARPRECO": "True",
-                    "item": itens_payload
+            "requestBody": {
+                "nota": {
+                    "cabecalho": cabecalho_payload,
+                    "itens": {
+                        "INFORMARPRECO": "True",
+                        "item": itens_payload
+                    }
                 }
             }
         }
 
         response = requests.post(url, headers=headers, params=params, json=payload)
+
+        if debug:
+            print("\n=== DEBUG SANKHYA ===")
+            print("STATUS:", response.status_code)
+            print(response.text)
+            print("=====================\n")
+
         response.raise_for_status()
 
         data = response.json()
@@ -438,9 +467,6 @@ class SankhyaAPI:
     
     @classmethod
     def listar_centros_resultado(cls):
-        """
-        Lista todos os Centros de Resultado via API v1.
-        """
         url_base = f"{cls.BASE_URL}/v1/centros-resultado"
         headers = cls.get_headers()
 
@@ -450,7 +476,16 @@ class SankhyaAPI:
 
         while True:
             url = f"{url_base}?page={page}&pageSize={page_size}"
+
+            print("\n=== DEBUG – REQUEST CENTROS RESULTADO ===")
+            print("URL:", url)
+            print("Headers:", headers)
+
             response = requests.get(url, headers=headers, timeout=15)
+            print("Status:", response.status_code)
+            print("Response raw:", response.text[:4000])
+            print("=========================================\n")
+
             response.raise_for_status()
 
             data = response.json()
@@ -459,13 +494,16 @@ class SankhyaAPI:
             if isinstance(content, dict):
                 content = list(content.values())
 
+            if not content:
+                print("⚠️ Nenhum registro encontrado nesta página.")
+                break
+
             for c in content:
                 resultados.append({
                     "codigo": c.get("codigoCentroResultado"),
                     "nome": c.get("nome")
                 })
 
-            # Acabou?
             if len(content) < page_size:
                 break
 
@@ -475,9 +513,6 @@ class SankhyaAPI:
     
     @classmethod
     def listar_projetos(cls):
-        """
-        Lista todos os projetos paginados via API v1.
-        """
         url_base = f"{cls.BASE_URL}/v1/projetos"
         headers = cls.get_headers()
 
@@ -486,33 +521,67 @@ class SankhyaAPI:
 
         while True:
             url = f"{url_base}?page={page}"
-            response = requests.get(url, headers=headers)
+
+            print("\n=== DEBUG – REQUEST PROJETOS ===")
+            print("URL:", url)
+            print("Headers:", headers)
+
+            response = requests.get(url, headers=headers, timeout=15)
+            print("Status:", response.status_code)
+            print("Response raw:", response.text[:4000])
+            print("==========================================\n")
+
             response.raise_for_status()
 
             data = response.json()
 
-            content = data.get("data") or data.get("content") or []
+            # Detecta onde estão os dados
+            content = (
+                data.get("data")
+                or data.get("content")
+                or data.get("items")
+                or data.get("records")
+                or []
+            )
+
+            # Se vier como objeto com chave "data": [ ... ]
             if isinstance(content, dict):
-                content = [content]
+                # tenta extrair automaticamente qualquer lista interna
+                for val in content.values():
+                    if isinstance(val, list):
+                        content = val
+                        break
 
             if not content:
                 break
 
             for item in content:
-                codigo = item.get("codProj") or item.get("codigo")
-                nome = item.get("descrProj") or item.get("nome") or item.get("descricao")
+                print("ITEM DEBUG:", item)  # <-- log para ver chaves reais
+
+                # detecta automaticamente o campo do código
+                codigo = (
+                    item.get("codProj")
+                    or item.get("codigo")
+                    or item.get("codigoProjeto")
+                    or item.get("id")
+                    or item.get("codigoInterno")
+                    or None
+                )
+
+                nome = (
+                    item.get("descrProj")
+                    or item.get("nome")
+                    or item.get("descricao")
+                    or "Sem Nome"
+                )
 
                 resultados.append({
                     "codigo": str(codigo),
                     "nome": nome
                 })
 
-            # última página?
-            last = (
-                data.get("last") is True
-                or data.get("pagination", {}).get("hasMore", "false") == "false"
-            )
-            if last:
+            # fim da paginação
+            if data.get("last") is True or data.get("pagination", {}).get("hasMore") == "false":
                 break
 
             page += 1
