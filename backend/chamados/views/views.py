@@ -40,6 +40,7 @@ class ChamadoViewSet(viewsets.ModelViewSet):
             "centro_resultado_codigo",
             "produto_novo_flag",
             "natureza_item_codigo",
+            "observacao_item",
         ))
 
         # Chama o Sankhya

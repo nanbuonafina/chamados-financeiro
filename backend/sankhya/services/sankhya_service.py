@@ -274,6 +274,7 @@ class SankhyaAPI:
                 "VLRUNIT": {"$": f"{item['vlrunit']:.2f}"},
                 "PERCDESC": {"$": "0"},
                 "AD_CODCENCUS": {"$": item["centro_resultado_codigo"]},
+                "OBSERVACAO": {"$": item.get("observacao_item", "")},
             })
 
         cabecalho_payload = {

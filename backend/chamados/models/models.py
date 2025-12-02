@@ -68,6 +68,7 @@ class ItemChamado(models.Model):
     centro_resultado_codigo = models.CharField(max_length=20)
     produto_novo_flag = models.BooleanField(default=False)
     natureza_item_codigo = models.CharField(max_length=20)
+    observacao_item = models.TextField(blank=True)
 
     def __str__(self):
         return f"Item {self.codigo} do chamado {self.chamado.id}"
